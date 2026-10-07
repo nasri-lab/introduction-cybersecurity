@@ -1,7 +1,7 @@
 # 🛠️ LAB 2 : Modèles de Contrôle d'Accès Applicatifs (DAC, MAC, RBAC, ABAC)
 
-**Module :** Introduction à la Sécurité des Systèmes (GI2)
-**Enseignant :** Pr. Mohammed NASRI
+**Module :** Introduction à la Sécurité des Systèmes (GI2)  
+**Enseignant :** Pr. Mohammed NASRI  
 **Objectif :** Étendre l'application Web PHP/MySQL (Lab 1\) pour implémenter et comparer les quatre grands modèles de contrôle d'accès applicatifs : **DAC**, **MAC**, **RBAC** et **ABAC**.
 
 ---
@@ -14,7 +14,7 @@ Dans le modèle **DAC** (*Discretionary Access Control*), le propriétaire d'un 
 
 ### 1\. Modification de la Base de Données
 
-À l'aide de **phpMyAdmin** (http\://localhost:8080) ou en exécutant des requêtes SQL directement sur la base de données tp\_securite, créez la table partages permettant d'associer un document, un utilisateur bénéficiaire et un droit spécifique (lecture ou ecriture) :
+À l'aide de **phpMyAdmin** (http\://localhost:8080) ou en exécutant des requêtes SQL directement sur la base de données **tp\_securite**, créez la table **partages** permettant d'associer un **document**, un **utilisateur** bénéficiaire et un **droit** spécifique (lecture ou ecriture) :
 
 SQL
 
@@ -31,21 +31,21 @@ CREATE TABLE IF NOT EXISTS `partages` (
 
 ### 2\. Développement des Fonctions PHP de Contrôle
 
-Dans le fichier src/security.php, ajoutez la fonction de vérification du modèle DAC peutAccederDAC(\$user, \$document, \$action) : 
+Dans le fichier src/security.php, ajoutez la fonction de vérification du modèle DAC **peutAccederDAC(\$user, \$document, \$action)** : 
   * Un utilisateur a accès à un document en **lecture** si :  
     * Il est l'auteur du document (\$document\['auteur\_id'\] \== \$user\['id'\]), **OU**  
-    * Il existe une entrée dans la table partages pour ce document et cet utilisateur avec le droit lecture ou ecriture.  
+    * Il existe une entrée dans la table **partages** pour ce document et cet utilisateur avec le droit lecture ou ecriture.  
   * Un utilisateur a accès à un document en **modification** (ecriture) si :  
     * Il est l'auteur du document, **OU**  
-    * Il existe une entrée dans la table partages avec le droit ecriture.
+    * Il existe une entrée dans la table **partages** avec le droit ecriture.
 
 ### 3\. Intégration des Contrôles dans le Code Source
 
 1. **Partage de document (lecture.php) :**  
-   * Ajoutez un formulaire réservé à l'auteur du document lui permettant de saisir le nom d'un autre utilisateur et de lui attribuer un droit (lecture ou ecriture).  
+   * Ajoutez, sur la page de consultation du document, un formulaire réservé à son auteur. Ce formulaire affichera un tableau listant l'ensemble des utilisateurs, avec pour chacun deux cases à cocher : Lecture et Écriture. Le propriétaire pourra ainsi accorder ou révoquer les accès de son choix à chaque utilisateur.
 2. **Protection des accès (lecture.php et modifier.php) :**  
-   * Dans lecture.php, appliquez peutAccederDAC(\$currentUser, \$doc, 'lecture'). Interdisez l'affichage si la fonction renvoie false.  
-   * Dans modifier.php, appliquez peutAccederDAC(\$currentUser, \$doc, 'ecriture') avant de valider le formulaire de mise à jour.
+   * Dans lecture.php, appliquez **peutAccederDAC(\$currentUser, \$doc, 'lecture')**. Interdisez l'affichage si la fonction renvoie false.  
+   * Dans modifier.php, appliquez **peutAccederDAC(\$currentUser, \$doc, 'ecriture')** avant de valider le formulaire de mise à jour.
 
 ### 4\. Tests et Validation dans le Navigateur
 
@@ -62,22 +62,22 @@ Contrairement au modèle DAC, le modèle **MAC** (*Mandatory Access Control*) im
 
 ### 1\. Modification de la Base de Données
 
-Exécutez les requêtes suivantes sur la base de données tp\_securite :
+Au niveau de la base de données :
 
-1. Ajoutez la colonne niveau\_habilitation (type INT, valeur par défaut 1) dans la table utilisateurs.  
-2. Ajoutez la colonne classification\_niveau (type INT, valeur par défaut 1) dans la table documents.
+1. Ajoutez la colonne **niveau\_habilitation** (type INT, valeur par défaut 1) dans la table **utilisateurs**.  
+2. Ajoutez la colonne **classification\_niveau** (type INT, valeur par défaut 1) dans la table **documents**.
 
 **Échelle des niveaux :** 1 \= Public, 2 \= Confidentiel, 3 \= Secret.
 
 ### 2\. Développement des Fonctions PHP de Contrôle
 
 Dans src/security.php, ajoutez la fonction de contrôle d'accès obligatoire basée sur le niveau d'habilitation **peutAccederMAC(\$user, \$document)** :
-  * La fonction retourne true si le niveau d'habilitation de l'utilisateur est **supérieur ou égal** à la classification du document (\$user\['niveau\_habilitation'\] \>= \$document\['classification\_niveau'\]).  
-  * Dans le cas contraire, elle retourne false.
+  * La fonction retourne **true** si le niveau d'habilitation de l'utilisateur est **supérieur ou égal** à la classification du document (\$user\['niveau\_habilitation'\] \>= \$document\['classification\_niveau'\]).  
+  * Dans le cas contraire, elle retourne **false**.
 
 ### 3\. Intégration des Contrôles dans le Code Source
 
-1. Dans lecture.php, appliquez la vérification MAC **en superposition** du contrôle DAC.  
+1. Dans **lecture.php**, appliquez la vérification MAC **en plus** du contrôle DAC.  
 2. Même si un utilisateur a reçu un partage explicite via le modèle DAC (Exercice 1), l'accès doit être strictly bloqué si la règle MAC n'est pas satisfaite.
 
 ### 4\. Tests et Validation dans le Navigateur
@@ -132,13 +132,13 @@ INSERT INTO `role_permissions` (`role_id`, `permission_id`) VALUES (1, 1), (2, 1
 ### 2\. Développement des Fonctions PHP de Contrôle
 
 Dans src/security.php, implémentez la fonction de vérification des permissions RBAC **aPermissionRBAC(\$user\_id, \$nom\_permission, \$pdo)** :
-  * Exécutez une requête SQL qui joint user\_roles, role\_permissions et permissions.  
-  * La fonction retourne true si au moins un des rôles de l'utilisateur possède la permission \$nom\_permission.
+  * Exécutez une requête SQL qui joint **user\_roles**, **role\_permissions** et **permissions**.  
+  * La fonction retourne **true** si au moins un des rôles de l'utilisateur possède la permission **\$nom\_permission**.
 
 ### 3\. Intégration des Contrôles dans le Code Source
 
-1. **Création (creer.php) :** Exigez la permission DOC\_CREATE avant de charger la page ou de traiter la soumission.  
-2. **Modification (modifier.php) :** Exigez la permission DOC\_EDIT.  
+1. **Création (creer.php) :** Exigez la permission **DOC\_CREATE** avant de charger la page ou de traiter la soumission.  
+2. **Modification (modifier.php) :** Exigez la permission **DOC\_EDIT**.  
 3. Interdisez le chargement de la page si l'utilisateur ne possède pas la permission requise.
 
 ### 4\. Tests et Validation dans le Navigateur
@@ -155,8 +155,8 @@ Le modèle **ABAC** (*Attribute-Based Access Control*) évalue dynamiquement les
 
 ### 1\. Modification de la Base de Données
 
-1. Ajoutez la colonne statut (type VARCHAR(20), valeur par défaut 'brouillon') dans la table documents.  
-2. Mettez à jour quelques documents au statut 'publie'.
+1. Ajoutez la colonne **statut** (type VARCHAR(20), valeur par défaut 'brouillon') dans la table **documents**.  
+2. Mettez à jour quelques documents au statut **'publie'**.
 
 ### 2\. Développement des Fonctions PHP de Contrôle
 
