@@ -30,7 +30,7 @@ Créez le fichier `src/security.php` et définissez-y les deux règles de Bell-L
 1. **Règle de Lecture — *Simple Security Property* ("No Read Up") :**
    * Implémentez la fonction `peutLireBellLaPadula($user, $document)` qui retourne `true` si le niveau d'habilitation de l'utilisateur est **supérieur ou égal** à la classification du document.
 2. **Règle d'Écriture — *Star Property* ($\star$) ("No Write Down") :**
-   * Implémentez la fonction `peutEcrireBellLaPadula($user, $classificationDocCible)` qui retourne `true` si la classification du document est **supérieure ou égale** au niveau d'habilitation de l'utilisateur (afin d'éviter les fuites d'informations vers un niveau inférieur).
+   * Implémentez la fonction `peutEcrireBellLaPadula($user, $document)` qui retourne `true` si la classification du document est **supérieure ou égale** au niveau d'habilitation de l'utilisateur (afin d'éviter les fuites d'informations vers un niveau inférieur).
 
 ---
 
