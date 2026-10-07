@@ -1,4 +1,4 @@
-# 🛠️ TP 1
+# 🛠️ LAB 1
 
 **Module :** Introduction à la Sécurité des Systèmes (GI2)  
 **Enseignant :** Pr. Mohammed NASRI  
@@ -55,11 +55,8 @@ Incluez `security.php` dans les pages de l'application et appliquez les vérific
 2. **Scénarios de validation :**
    * Connectez-vous avec `bob` (`niveau = 1`) et tentez de lire le document de niveau `4` $\rightarrow$ **Vérifiez le blocage en lecture (*No Read Up*)**.
    * Connectez-vous avec `alice` (`niveau = 4`) et tentez de créer ou modifier un document de niveau `1` $\rightarrow$ **Vérifiez le blocage en écriture (*No Write Down*)**.
----
 
-
-   # Exercice 2 : Implémentation du Modèle de Biba
----
+# Exercice 2 : Implémentation du Modèle de Biba
 
 ## 📋 Contexte et Travail à réaliser
 
