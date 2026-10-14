@@ -1,4 +1,4 @@
-# 🛠️ LAB 3 : Audit, Exploitation (Red Team) et Durcissement (Blue Team) d'un Serveur Linux 
+# 🛠️ LAB 4 : Audit, Exploitation (Red Team) et Durcissement (Blue Team) d'un Serveur Linux 
 
 ---
 
@@ -38,12 +38,14 @@ Depuis votre terminal **Kali Linux** (Docker ou VM) :
    ```bash
    nmap -sV -sC -O -p- <IP_METASPLOITABLE_2> -oN scan_initial.txt
    ```
+L'option **-oN scan_initial.txt** indique à Nmap d'enregistrer le rapport du scan dans ce fichier. Cela leur permet de conserver une trace écrite de tous les ports et services ouverts identifiés au début de l'atelier, afin de pouvoir la joindre à leur compte-rendu ou la comparer avec le scan final après le hardening.
 
 **Questions d'analyse (à inclure dans le rapport) :**
 * Dressez un tableau récapitulatif des **5 services les plus critiques** identifiés (Port, Protocole, Service, Version exacte).
 * Quelle version du serveur FTP (`vsftpd`) s'exécute sur le port 21 ? S'agit-il d'une version réputée vulnérable ?
 
 #### Étape 1.2 : Attaque par Force Brute sur SSH
+
 1. Utilisez **Hydra** pour tester la résistance du service SSH face à un dictionnaire de mots de passe courants :
    ```bash
    hydra -l msfadmin -P /usr/share/wordlists/rockyou.txt ssh://<IP_METASPLOITABLE_2>
@@ -51,6 +53,29 @@ Depuis votre terminal **Kali Linux** (Docker ou VM) :
 2. Notez les identifiants valides obtenus et connectez-vous au serveur :
    ```bash
    ssh msfadmin@<IP_METASPLOITABLE_2>
+   ```
+
+2. Si vous n'avez pas le fichier rockyou.txt
+
+Par défaut sous Kali Linux, le fichier rockyou.txt est fourni sous forme d'archive compressée. Avant d'exécuter Hydra, il faut la décompresser :
+
+Vérifiez la présence du fichier compressé :
+
+   ```bash
+   ls -lh /usr/share/wordlists/rockyou.txt.gz
+   ```
+
+(Si le paquet manque dans votre conteneur Docker, installez-le via : `apt update && apt install -y wordlists` )
+
+Décompressez l'archive rockyou.txt.gz :
+
+   ```bash
+   gunzip /usr/share/wordlists/rockyou.txt.gz
+   ```
+Vérifiez que le dictionnaire extrait est bien présent (taille ~133 Mo) :
+
+   ```bash
+   ls -lh /usr/share/wordlists/rockyou.txt
    ```
 
 ---
