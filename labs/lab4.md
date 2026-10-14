@@ -190,18 +190,3 @@ Chaque binôme doit soumettre sur la plateforme pédagogique un rapport d'atelie
 4. **Bilan Comparatif :**
    * Capture du score **Lynis Initial** vs **Lynis Final**.
    * Tableau synthétique Récapitulatif : *Faiblesse identifiée ➔ Risque ➔ Action de Hardening appliquée*.
-
----
-
-## 📊 5. Grille d'Évaluation (Sur 20 Points)
-
-| Critère | Description | Barème |
-| :--- | :--- | :--- |
-| **Reconnaissance & Scan** | Exactitude de la cartographie Nmap et identification des CVEs/services | **3.0 pts** |
-| **Exploitation Red Team** | Réussite du test de force brute SSH (Hydra) et documentation des étapes | **3.0 pts** |
-| **Audit de Logs & Lynis** | Analyse correcte de `/var/log/auth.log` et pertinence des relevés Lynis | **4.0 pts** |
-| **Hardening & Pare-feu** | Application conforme des règles `iptables` (Default DROP) et sécurisation SSH | **5.0 pts** |
-| **Validation & Re-scan** | Preuve de la fermeture des ports non essentiels et hausse du Hardening Index | **3.0 pts** |
-| **Rigueur du Rapport** | Qualité de la rédaction, présence des captures d'écran et structure PDF | **2.0 pts** |
-
-```
