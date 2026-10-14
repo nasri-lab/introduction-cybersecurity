@@ -55,24 +55,24 @@ L'option **-oN scan_initial.txt** indique à Nmap d'enregistrer le rapport du sc
    ssh msfadmin@<IP_METASPLOITABLE_2>
    ```
 
-2. Si vous n'avez pas le fichier rockyou.txt
+2. **Si vous n'avez pas le fichier `rockyou.txt`**
 
-Par défaut sous Kali Linux, le fichier rockyou.txt est fourni sous forme d'archive compressée. Avant d'exécuter Hydra, il faut la décompresser :
+   Par défaut sous Kali Linux, le fichier rockyou.txt est fourni sous forme d'archive compressée. Avant d'exécuter Hydra, il faut la décompresser :
 
-Vérifiez la présence du fichier compressé :
+   Vérifiez la présence du fichier compressé :
 
    ```bash
    ls -lh /usr/share/wordlists/rockyou.txt.gz
    ```
 
-(Si le paquet manque dans votre conteneur Docker, installez-le via : `apt update && apt install -y wordlists` )
+   (Si le paquet manque dans votre conteneur Docker, installez-le via : `apt update && apt install -y wordlists` )
 
-Décompressez l'archive rockyou.txt.gz :
+   Décompressez l'archive rockyou.txt.gz :
 
    ```bash
    gunzip /usr/share/wordlists/rockyou.txt.gz
    ```
-Vérifiez que le dictionnaire extrait est bien présent (taille ~133 Mo) :
+   Vérifiez que le dictionnaire extrait est bien présent (taille ~133 Mo) :
 
    ```bash
    ls -lh /usr/share/wordlists/rockyou.txt
