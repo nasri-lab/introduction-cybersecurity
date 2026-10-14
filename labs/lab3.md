@@ -106,7 +106,7 @@ Pour que votre machine d'attaque Kali Linux puisse communiquer avec Metasploitab
 
 ## 5. Validation de la préparation
 
-### A. Test global de connectivité et d'outils
+### A. Test global de connectivité et d'outils (Depuis Kali)
 
 1. **Vérifier la présence de Nmap** :
 
@@ -159,3 +159,6 @@ Si vous avez opté pour Docker, effectuez ces vérifications supplémentaires :
    ```
 
    * *Validation* : Vous devez vous retrouver directement dans le terminal de Kali avec tous vos outils déjà installés.
+
+
+> **Attention :** Si jamais une des étapes ne fonctionne pas correctement, essayez de débugger et de régler avant la séance.
