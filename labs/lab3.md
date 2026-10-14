@@ -1,4 +1,4 @@
-# Atelier Pratique — Préparation de l'Environnement de Travail
+# 🛠️ LAB 3 : Durcissement de la sécurité d'un système d'exploitation Linux - Préparation de l'environnement
 
 Bienvenue dans cet atelier pratique ! Avant de commencer les exercices d'audit et de tests d'intrusion, nous allons configurer votre environnement de travail.
 
@@ -40,7 +40,7 @@ docker run -it --net=host --name kali-atelier kalilinux/kali-rolling /bin/bash
 
 #### Étape 3 : Installer la boîte à outils essentielle (Top 10)
 
-L'image de base étant très épurée, mettez à jour le gestionnaire de paquets et installez les 10 outils majeurs de sécurité (Nmap, Metasploit, Hydra, Sqlmap, etc.) :
+L'image de base étant très legère (épurée), mettez à jour le gestionnaire de paquets et installez les 10 outils majeurs de sécurité (Nmap, Wireshark, John the Ripper, Aircrack-ng, Hydra, Burp Suite, Metasploit Framework, OWASP ZAP, Netcat, Directory Buster) :
 
 ```
 apt update && apt install -y kali-tools-top10
@@ -49,7 +49,7 @@ apt update && apt install -y kali-tools-top10
 
 ### Option B : Installation via Machine Virtuelle (Recommandé pour 16 Go de RAM ou +)
 
-Cette méthode installe un OS complet avec une interface graphique (XFCE).
+Cette méthode installe un OS complet avec une interface graphique.
 
 #### Étape 1 : Télécharger l'image préconfigurée pour VirtualBox / VMware
 
@@ -67,7 +67,7 @@ Avant de démarrer la VM, ouvrez ses paramètres et allouez-lui **entre 2048 Mo 
 
 Metasploitable 2 est une machine virtuelle Linux délibérément vulnérable, idéale pour pratiquer les scans de réseau, la recherche de vulnérabilités et l'exploitation de services.
 
-1. **Télécharger Metasploitable 2** : Téléchargez l'archive officielle au format ZIP (contenant le disque virtuel `.vmdk`).
+1. **Télécharger Metasploitable 2** : Téléchargez l'archive officielle ([Exploitable 2](https://sourceforge.net/projects/metasploitable/)) au format ZIP (contenant le disque virtuel `.vmdk`).
 
 2. **Extraire le fichier** : Décompressez l'archive ZIP dans le dossier de votre choix sur votre machine hôte.
 
