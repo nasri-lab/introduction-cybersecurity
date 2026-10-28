@@ -32,22 +32,17 @@ Analysez les chaînes suivantes et complétez le tableau :
 
 | N° | Longueur (caractères / bits) | Caractéristiques / Préfixe | Algorithme suspecté |
 |:---|:---|:---|:---|
-| 1  | 32 hex (128 bits) | Aucun préfixe, hexadécimal | MD5 |
-| 2  | 40 hex (160 bits) | Aucun préfixe, hexadécimal | SHA-1 |
-| 3  | 64 hex (256 bits) | Aucun préfixe, hexadécimal | SHA-256 |
-| 4  | 60 caractères | Préfixe `$2b$`, encodage Radix-64 | bcrypt |
-| 5  | Variable | Préfixe `$argon2id$`, paramètres explicites | Argon2id |
-| 6  | Variable | Préfixe `$6$` (Unix crypt) | SHA-512 salé (`/etc/shadow`) |
+| 1  | ... | ... | ... |
+
 
 ### Exercice 1.2 : Utilisation d'outils d'identification automatisés
 Sur Kali Linux, testez l'empreinte N° 1 et N° 4 avec les utilitaires dédiés :
 ```bash
 # Avec hash-identifier
-hash-identifier
-# (Coller l'empreinte N° 1)
+hash-identifier ...
 
 # Avec hashID
-hashid -m '$2b$12$e80i/D7r.X4g5l5H6bK8teP9aWz9kE6N5P5d3L4M3K2J1I0H9G8F7'
+hashid -m ...
 ```
 *Question :* Pourquoi `hashID` affiche-t-il le code mode Hashcat associé (ex: `mode 3200`) ? À quoi sert ce numéro lors de l'audit ?
 
@@ -146,20 +141,19 @@ $argon2id$v=19$m=65536,t=3,p=2$q8/1yZ4+vYq8L...$N9uYmXW...
 
 ### Exercice 4.1 : Décomposition des champs
 Détaillez le rôle de chaque section délimitée par `$` :
-* **[1] Algorithme :** `argon2id` (hybride anti-GPU et anti-canaux auxiliaires).
-* **[2] Version :** `v=19` (0x13, version standard de l'implémentation RFC 9106).
-* **[3] Paramètres de coût :**
-  * `m=65536` : Coût mémoire (64 Mo de RAM requis).
-  * `t=3` : Coût temporel (3 itérations complètes sur la mémoire).
-  * `p=2` : Degré de parallélisme (2 threads CPU parallèles).
-* **[4] Sel :** Encodé en base64 standard/cryptographique.
-* **[5] Empreinte finale :** Condensat résultant du calcul memory-hard.
+* **[1] :** ...
+* **[2] :** ...
+* **[3] :** ...
+  * `t=` : ...
+  * `p=` : ...
+* **[4] :** ...
+* **[5] :** ...
 
 ---
 
 ## Partie 5 : Comparatif de Performance et de Complexité (Script Python)
 
-Écrivez un script `benchmark_kdf.py` pour mesurer le temps nécessaire à la validation d'une empreinte sur votre machine.
+Analysez puis exécutez le script `benchmark_kdf.py` suivant pour mesurer le temps nécessaire à la validation d'une empreinte sur votre machine.
 
 ```python
 import time, hashlib, bcrypt
@@ -294,10 +288,7 @@ if __name__ == "__main__":
 
 ---
 
-## Livrables attendus des étudiants
-1. **Rapport de TP (PDF) :**
+## Rapport de TP
    * Tableau de benchmark de votre machine (Partie 2 et Partie 5).
    * Réponses justifiées aux questions de réflexion.
    * Capture d'écran de l'exécution de la mise à jour automatique de coût (*check_needs_rehash*).
-2. **Code source propre :**
-   * Script Python intégrant la gestion des exceptions et la sécurisation contre les injections SQL (requêtes préparées obligatoires).
