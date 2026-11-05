@@ -246,37 +246,17 @@ Deux adresses de Keycloak coexistent, et c'est voulu :
 - `http://keycloak:8080` : utilisée par **les applications** pour leurs appels directs (`/token`, `/certs`),
   à l'intérieur du réseau Docker.
 
-## 2.2 Ce que vous allez modifier
-
-| Fichier | Action |
-|---------|--------|
-| `docker-compose.yml` | **modifier** : ajouter le service `keycloak`, des variables aux deux applications, le volume `kc_data` |
-| `.env` | **créer** : secrets des deux clients OIDC |
-| `mysql/migration-etape2.sql` | **créer** puis exécuter : retirer les mots de passe des tables, ajouter `sub` |
-| `app1-biblio/src/inc/oidc.php` | **créer** : le client OpenID Connect |
-| `app1-biblio/src/inc/bootstrap.php` | **modifier** : supprimer les comptes initiaux, charger `oidc.php`, menu |
-| `app1-biblio/src/login.php`, `logout.php`, `admin.php` | **remplacer** |
-| `app1-biblio/src/callback.php`, `token.php` | **créer** |
-| `app1-biblio/src/register.php` | **supprimer** |
-| `app2-helpdesk/requirements.txt` | **modifier** : ajouter PyJWT |
-| `app2-helpdesk/app.py` | **modifier** : 4 blocs à remplacer |
-| `app2-helpdesk/templates/base.html` | **modifier** : menu |
-| `app2-helpdesk/templates/login.html`, `admin.html` | **remplacer** |
-| `app2-helpdesk/templates/token.html` | **créer** |
-| `app2-helpdesk/templates/register.html` | **supprimer** |
-| `app3-intra/` | **ne pas toucher** |
-
-## 2.3 Adresses
+## 2.2 Adresses
 
 | Service | URL | Identifiants |
 |---------|-----|--------------|
-| BiblioGI | http://localhost:8081 | comptes Keycloak (voir 2.5) |
-| HelpDesk | http://localhost:8082 | comptes Keycloak (voir 2.5) |
+| BiblioGI | http://localhost:8081 | comptes Keycloak |
+| HelpDesk | http://localhost:8082 | comptes Keycloak |
 | IntraGI | http://localhost:8083 | inchangés (étape 1) |
 | Adminer | http://localhost:8088 | `root` / `rootpass` |
 | **Keycloak** (console d'administration) | http://localhost:8080 | `admin` / `admin` |
 
-## 2.4 Ajouter Keycloak au projet
+## 2.3 Ajouter Keycloak au projet
 
 Dans `docker-compose.yml`, ajoutez le service `keycloak` juste avant `app1-biblio:` :
 
@@ -313,13 +293,7 @@ docker compose logs -f keycloak
 ✅ **Attendu** : après 20 à 60 s, une ligne `Keycloak 26.4… started in …s. Listening on: http://0.0.0.0:8080`.
 Faites Ctrl+C. http://localhost:8080 affiche la page de connexion de la console.
 
-❌ **Problème si** :
-- `AccessDeniedException: /opt/keycloak/data/…` puis `Failed to start server` → le volume est monté ailleurs que
-  sur `/opt/keycloak/data`. Corrigez la ligne, puis `docker compose rm -sf keycloak`, `docker volume rm lab-iam_kc_data`,
-  `docker compose up -d keycloak` ;
-- `OutOfMemoryError` → augmentez la mémoire allouée à Docker Desktop (*Settings* → *Resources*).
-
-## 2.5 Configurer Keycloak
+## 2.4 Configurer Keycloak
 
 Connectez-vous à http://localhost:8080 avec `admin` / `admin`.
 
@@ -364,6 +338,29 @@ dans ce realm, **pas** dans `master`.
 **e) Faire voyager les rôles dans les jetons** — *Clients* → `biblio` → onglet *Client scopes* →
 `biblio-dedicated` → *Configure a new mapper* (ou *Add mapper* → *By configuration*) → **User Realm Role** :
 
+*Pourquoi cette étape ?* À l'étape b), vous avez créé les rôles `etudiant`, `enseignant` et `admin`, et vous les
+avez attribués aux utilisateurs. Mais par défaut, Keycloak ne place pas ces rôles dans l'**ID Token**. Il les met
+seulement dans l'Access Token, et à un endroit imbriqué (`realm_access.roles`). Or le code de BiblioGI
+(`oidc_app_role()` dans `oidc.php`) et celui de HelpDesk (`app_flags()` dans `app.py`) lisent un claim nommé
+`roles` **dans l'ID Token**. Sans réglage, ils ne trouveraient aucun rôle et refuseraient tout le monde, même
+alice (« … aucun rôle ne vous autorise … »).
+
+On ajoute donc un **mapper** : une règle qui dit à Keycloak « au moment de fabriquer les jetons pour ce client,
+ajoute un claim `roles` qui contient la liste des rôles du realm de l'utilisateur ».
+
+*Où le créer ?* Chaque client possède un *client scope* « dédié », nommé `<client>-dedicated`. Ce qu'on y met ne
+s'applique qu'à ce client. On crée donc le même mapper deux fois : une fois pour `biblio`, une fois pour `helpdesk`.
+
+1. Menu de gauche → *Clients* → cliquez sur `biblio`.
+2. Onglet **Client scopes** (en haut). Dans la liste, cliquez sur **`biblio-dedicated`** (c'est un lien ; sa
+   description est *Dedicated scope and mappers for this client*).
+3. Onglet *Mappers* :
+   - si la liste est vide, cliquez sur **Configure a new mapper** ;
+   - sinon, cliquez sur **Add mapper** → **By configuration**.
+4. Dans la liste des types de mappers, choisissez **User Realm Role**.
+5. Remplissez le formulaire, puis cliquez sur *Save* :
+
+
 | Champ | Valeur |
 |-------|--------|
 | Name | `roles-du-realm` |
@@ -382,7 +379,7 @@ BIBLIO_CLIENT_SECRET=collez-ici-le-secret-du-client-biblio
 HELPDESK_CLIENT_SECRET=collez-ici-le-secret-du-client-helpdesk
 ```
 
-## 2.6 Brancher les applications sur Keycloak (docker-compose.yml)
+## 2.5 Brancher les applications sur Keycloak (docker-compose.yml)
 
 Ajoutez ces variables dans `environment:` de **`app1-biblio`**, après `DB_PASS` :
 
@@ -408,10 +405,10 @@ Et celles-ci dans `environment:` de **`app2-helpdesk`**, après `FLASK_SECRET` :
       OIDC_CLIENT_SECRET: ${HELPDESK_CLIENT_SECRET}
 ```
 
-## 2.7 Migrer les bases de données
+## 2.6 Migrer les bases de données
 
 Les tables `users` de BiblioGI et HelpDesk ne stockeront plus aucun mot de passe. Elles deviennent de simples
-**profils**, rattachés à l'identité Keycloak par le claim `sub`. Créez `mysql/migration-etape2.sql` :
+**profils**, rattachés à l'identité Keycloak par le claim `sub`. Via l'Adminer → *Requête SQL* → collez le contenu du fichier → *Exécuter*.
 
 ```sql
 -- =====================================================================
@@ -430,25 +427,10 @@ ALTER TABLE users
   DROP COLUMN pwd;
 ```
 
-Exécutez-le (le compte MySQL des applications n'a pas le droit `ALTER` : on passe par `root`) :
-
-```bash
-docker compose cp mysql/migration-etape2.sql mysql:/tmp/migration.sql
-docker compose exec mysql sh -c "mysql -uroot -prootpass < /tmp/migration.sql"
-```
-
-(Ou : Adminer → *Requête SQL* → collez le contenu du fichier → *Exécuter*.)
-
-✅ **Attendu** : seulement l'avertissement `Using a password on the command line interface can be insecure.`
-Dans Adminer, `biblio.users` a une colonne `sub` vide (NULL) et plus de `password_hash` ; `helpdesk.users` a une
-colonne `sub` et plus de `pwd`. Les comptes, l'emprunt d'Alice et son ticket sont toujours là.
-
-❌ `Duplicate column name 'sub'` → la migration a déjà été faite, rien à refaire.
-
 À partir de maintenant, BiblioGI et HelpDesk ne fonctionnent plus (leur code cherche encore les mots de passe)
 jusqu'à la fin de 2.9 : c'est normal.
 
-## 2.8 Migrer BiblioGI (PHP)
+## 2.7 Migrer BiblioGI (PHP)
 
 ### a) Créer le client OIDC : `app1-biblio/src/inc/oidc.php`
 
@@ -770,7 +752,7 @@ render_header('Utilisateurs');
 
 Il n'y a plus d'inscription locale : les comptes sont créés dans Keycloak.
 
-## 2.9 Migrer HelpDesk (Python / Flask)
+## 2.8 Migrer HelpDesk (Python / Flask)
 
 ### a) `app2-helpdesk/requirements.txt` : ajoutez la ligne
 
@@ -957,7 +939,7 @@ def admin_users():
     return render_template("admin.html", users=users)
 ```
 
-### c) Les gabarits HTML
+### c) Les templates HTML
 
 Dans `templates/base.html`, ajoutez après la ligne du lien *Utilisateurs* :
 
@@ -1027,7 +1009,7 @@ Créez `templates/token.html` :
 
 Supprimez `templates/register.html`.
 
-## 2.10 Reconstruire et tester
+## 2.9 Reconstruire et tester
 
 ```bash
 docker compose up -d --build
@@ -1037,10 +1019,6 @@ docker compose ps
 ✅ **Attendu** : **6 services** `Up` ; `app1-biblio` et `app2-helpdesk` ont été reconstruits (`Built`, puis
 `Recreated` ou `Started`).
 
-❌ **Problème si** :
-- `app2-helpdesk` en `Restarting` → `docker compose logs app2-helpdesk` : une `SyntaxError` ou `IndentationError`
-  donne le numéro de ligne fautif dans `app.py` (attention aux espaces au copier-coller) ;
-- BiblioGI affiche une page blanche ou `500` → `docker compose logs app1-biblio` (erreur PHP avec le numéro de ligne).
 
 | Test | ✅ Résultat attendu | ❌ Si vous voyez… → cause probable |
 |------|--------------------|-----------------------------------|
@@ -1058,7 +1036,7 @@ docker compose ps
 | **8. Déconnexion** de BiblioGI | Passage rapide par Keycloak, retour sur BiblioGI non connecté. Rechargez HelpDesk et notez votre état. Une reconnexion à BiblioGI **redemande** le mot de passe | Erreur Keycloak sur l'URI à la déconnexion → *Valid post logout redirect URIs* manquant |
 | **9. IntraGI** | Toujours l'ancien formulaire et l'ancien mot de passe (`alice` / `alice`) | — |
 
-## 2.11 Dépannage de l'étape 2
+## 2.10 Dépannage de l'étape 2
 
 | Symptôme | Cause probable | Solution |
 |----------|----------------|----------|
@@ -1103,22 +1081,7 @@ auprès de l'annuaire.
 | **Mode `READ_ONLY`** | Keycloak lit l'annuaire mais n'y écrit jamais : l'annuaire reste la seule source de vérité |
 | **Injection LDAP** | Attaque qui modifie un filtre de recherche (`(uid=…)`) via une saisie non échappée |
 
-## 3.2 Ce que vous allez modifier
-
-| Fichier | Action |
-|---------|--------|
-| `docker-compose.yml` | **modifier** : ajouter `openldap`, `phpldapadmin`, deux volumes ; variables LDAP pour `app3-intra` |
-| `ldap/bootstrap.ldif` | **créer** : structure et comptes de départ de l'annuaire |
-| `ldap/alice.ldif`, `ldap/alice-groupe.ldif` | **créer** : ajout d'alice en ligne de commande |
-| Console Keycloak | **configurer** : supprimer les comptes locaux, fédération LDAP, mapper de rôles |
-| `mysql/migration-etape3.sql` | **créer** puis exécuter : retirer le mot de passe MD5 d'IntraGI |
-| `app3-intra/Dockerfile` | **remplacer** : ajouter l'extension LDAP de PHP |
-| `app3-intra/src/inc/ldap.php` | **créer** : authentification et lecture de l'annuaire |
-| `app3-intra/src/inc/bootstrap.php` | **modifier** : charger `ldap.php` |
-| `app3-intra/src/login.php`, `annuaire.php`, `admin.php` | **remplacer** |
-| `app1-biblio/`, `app2-helpdesk/` | **ne pas toucher** |
-
-## 3.3 Adresses
+## 3.2 Adresses
 
 | Service | URL | Identifiants |
 |---------|-----|--------------|
@@ -1130,7 +1093,7 @@ auprès de l'annuaire.
 | **phpLDAPadmin** | http://localhost:8090 | Login DN `cn=admin,dc=gi4,dc=lab` / `adminldap` |
 | **OpenLDAP** | ldap://localhost:10389 | administrateur `cn=admin,dc=gi4,dc=lab` / `adminldap` ; compte de service `cn=readonly,dc=gi4,dc=lab` / `readonlypass` |
 
-## 3.4 Ajouter l'annuaire au projet
+## 3.3 Ajouter l'annuaire au projet
 
 **a) Le contenu initial de l'annuaire.** Créez le dossier `ldap/` et le fichier `ldap/bootstrap.ldif` :
 
@@ -1282,7 +1245,7 @@ une à deux minutes au premier démarrage (image émulée) : c'est normal.
 `docker compose rm -sf openldap`, `docker volume rm lab-iam_ldap_data lab-iam_ldap_config`, `docker compose up -d`
 (seul l'annuaire est réinitialisé).
 
-## 3.5 Explorer l'annuaire
+## 3.4 Explorer l'annuaire
 
 **phpLDAPadmin** : http://localhost:8090 → *login* → Login DN `cn=admin,dc=gi4,dc=lab`, mot de passe `adminldap`.
 ✅ À gauche, l'arbre `dc=gi4,dc=lab` avec `cn=readonly`, `ou=groups` (3 entrées) et `ou=people` (4 entrées).
@@ -1310,7 +1273,7 @@ docker compose exec openldap ldapsearch -x -H ldap://localhost -D "cn=readonly,d
 
 ✅ Une seule entrée : `dn: cn=etudiant,ou=groups,dc=gi4,dc=lab`.
 
-## 3.6 À vous : ajouter deux utilisateurs
+## 3.5 À vous : ajouter deux utilisateurs
 
 Alice et Bob, qui existaient dans Keycloak à l'étape 2, doivent maintenant vivre dans l'annuaire.
 
@@ -1396,7 +1359,7 @@ renvoie `dn:uid=bob,ou=people,dc=gi4,dc=lab`.
 ❌ Si l'interface vous bloque, faites Bob comme Alice (fichiers `bob.ldif` et `bob-groupe.ldif` sur le même
 modèle, groupe `enseignant`).
 
-## 3.7 Configurer Keycloak pour utiliser l'annuaire
+## 3.6 Configurer Keycloak pour utiliser l'annuaire
 
 ### a) Supprimer les comptes locaux de Keycloak
 
@@ -1482,7 +1445,7 @@ bob). Dans *Users* (recherche `*`), chacun porte un lien de fédération `ldap-g
 | BiblioGI, `invite` / `Invite#2026` | « … aucun rôle (etudiant, enseignant, admin) ne vous autorise … » |
 | Keycloak, *Users* → alice → modifier l'e-mail | Champs verrouillés ou enregistrement refusé : la fédération est en `READ_ONLY` |
 
-## 3.8 Migrer IntraGI vers l'annuaire (PHP)
+## 3.7 Migrer IntraGI vers l'annuaire (PHP)
 
 ### a) La base
 
@@ -1778,7 +1741,7 @@ Dockerfile.
 | *Annuaire* | Badge « source : LDAP », 6 personnes, colonne *Groupes* avec des badges ; `invite` n'en a aucun | Seulement 4 personnes → alice et bob n'ont pas été ajoutés (3.6) |
 | `nadia` → *Comptes* | Bandeau « tout se fait désormais dans l'annuaire », liste des profils (dont les anciens `rh_admin`, `mehdi`…) | — |
 
-## 3.9 Scénarios
+## 3.8 Scénarios
 
 | Scénario | ✅ Résultat attendu |
 |----------|--------------------|
@@ -1795,7 +1758,7 @@ Commande du scénario 6 (dans un second terminal, avant de vous connecter à Int
 docker run --rm --net container:lab-iam-openldap-1 nicolaka/netshoot tcpdump -i any -A -s0 port 389
 ```
 
-## 3.10 Dépannage de l'étape 3
+## 3.9 Dépannage de l'étape 3
 
 | Symptôme | Cause probable | Solution |
 |----------|----------------|----------|
