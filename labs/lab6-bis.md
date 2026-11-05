@@ -246,37 +246,17 @@ Deux adresses de Keycloak coexistent, et c'est voulu :
 - `http://keycloak:8080` : utilisée par **les applications** pour leurs appels directs (`/token`, `/certs`),
   à l'intérieur du réseau Docker.
 
-## 2.2 Ce que vous allez modifier
-
-| Fichier | Action |
-|---------|--------|
-| `docker-compose.yml` | **modifier** : ajouter le service `keycloak`, des variables aux deux applications, le volume `kc_data` |
-| `.env` | **créer** : secrets des deux clients OIDC |
-| `mysql/migration-etape2.sql` | **créer** puis exécuter : retirer les mots de passe des tables, ajouter `sub` |
-| `app1-biblio/src/inc/oidc.php` | **créer** : le client OpenID Connect |
-| `app1-biblio/src/inc/bootstrap.php` | **modifier** : supprimer les comptes initiaux, charger `oidc.php`, menu |
-| `app1-biblio/src/login.php`, `logout.php`, `admin.php` | **remplacer** |
-| `app1-biblio/src/callback.php`, `token.php` | **créer** |
-| `app1-biblio/src/register.php` | **supprimer** |
-| `app2-helpdesk/requirements.txt` | **modifier** : ajouter PyJWT |
-| `app2-helpdesk/app.py` | **modifier** : 4 blocs à remplacer |
-| `app2-helpdesk/templates/base.html` | **modifier** : menu |
-| `app2-helpdesk/templates/login.html`, `admin.html` | **remplacer** |
-| `app2-helpdesk/templates/token.html` | **créer** |
-| `app2-helpdesk/templates/register.html` | **supprimer** |
-| `app3-intra/` | **ne pas toucher** |
-
-## 2.3 Adresses
+## 2.2 Adresses
 
 | Service | URL | Identifiants |
 |---------|-----|--------------|
-| BiblioGI | http://localhost:8081 | comptes Keycloak (voir 2.5) |
-| HelpDesk | http://localhost:8082 | comptes Keycloak (voir 2.5) |
+| BiblioGI | http://localhost:8081 | comptes Keycloak |
+| HelpDesk | http://localhost:8082 | comptes Keycloak |
 | IntraGI | http://localhost:8083 | inchangés (étape 1) |
 | Adminer | http://localhost:8088 | `root` / `rootpass` |
 | **Keycloak** (console d'administration) | http://localhost:8080 | `admin` / `admin` |
 
-## 2.4 Ajouter Keycloak au projet
+## 2.3 Ajouter Keycloak au projet
 
 Dans `docker-compose.yml`, ajoutez le service `keycloak` juste avant `app1-biblio:` :
 
@@ -313,13 +293,7 @@ docker compose logs -f keycloak
 ✅ **Attendu** : après 20 à 60 s, une ligne `Keycloak 26.4… started in …s. Listening on: http://0.0.0.0:8080`.
 Faites Ctrl+C. http://localhost:8080 affiche la page de connexion de la console.
 
-❌ **Problème si** :
-- `AccessDeniedException: /opt/keycloak/data/…` puis `Failed to start server` → le volume est monté ailleurs que
-  sur `/opt/keycloak/data`. Corrigez la ligne, puis `docker compose rm -sf keycloak`, `docker volume rm lab-iam_kc_data`,
-  `docker compose up -d keycloak` ;
-- `OutOfMemoryError` → augmentez la mémoire allouée à Docker Desktop (*Settings* → *Resources*).
-
-## 2.5 Configurer Keycloak
+## 2.4 Configurer Keycloak
 
 Connectez-vous à http://localhost:8080 avec `admin` / `admin`.
 
@@ -364,6 +338,29 @@ dans ce realm, **pas** dans `master`.
 **e) Faire voyager les rôles dans les jetons** — *Clients* → `biblio` → onglet *Client scopes* →
 `biblio-dedicated` → *Configure a new mapper* (ou *Add mapper* → *By configuration*) → **User Realm Role** :
 
+*Pourquoi cette étape ?* À l'étape b), vous avez créé les rôles `etudiant`, `enseignant` et `admin`, et vous les
+avez attribués aux utilisateurs. Mais par défaut, Keycloak ne place pas ces rôles dans l'**ID Token**. Il les met
+seulement dans l'Access Token, et à un endroit imbriqué (`realm_access.roles`). Or le code de BiblioGI
+(`oidc_app_role()` dans `oidc.php`) et celui de HelpDesk (`app_flags()` dans `app.py`) lisent un claim nommé
+`roles` **dans l'ID Token**. Sans réglage, ils ne trouveraient aucun rôle et refuseraient tout le monde, même
+alice (« … aucun rôle ne vous autorise … »).
+
+On ajoute donc un **mapper** : une règle qui dit à Keycloak « au moment de fabriquer les jetons pour ce client,
+ajoute un claim `roles` qui contient la liste des rôles du realm de l'utilisateur ».
+
+*Où le créer ?* Chaque client possède un *client scope* « dédié », nommé `<client>-dedicated`. Ce qu'on y met ne
+s'applique qu'à ce client. On crée donc le même mapper deux fois : une fois pour `biblio`, une fois pour `helpdesk`.
+
+1. Menu de gauche → *Clients* → cliquez sur `biblio`.
+2. Onglet **Client scopes** (en haut). Dans la liste, cliquez sur **`biblio-dedicated`** (c'est un lien ; sa
+   description est *Dedicated scope and mappers for this client*).
+3. Onglet *Mappers* :
+   - si la liste est vide, cliquez sur **Configure a new mapper** ;
+   - sinon, cliquez sur **Add mapper** → **By configuration**.
+4. Dans la liste des types de mappers, choisissez **User Realm Role**.
+5. Remplissez le formulaire, puis cliquez sur *Save* :
+
+
 | Champ | Valeur |
 |-------|--------|
 | Name | `roles-du-realm` |
@@ -382,7 +379,7 @@ BIBLIO_CLIENT_SECRET=collez-ici-le-secret-du-client-biblio
 HELPDESK_CLIENT_SECRET=collez-ici-le-secret-du-client-helpdesk
 ```
 
-## 2.6 Brancher les applications sur Keycloak (docker-compose.yml)
+## 2.5 Brancher les applications sur Keycloak (docker-compose.yml)
 
 Ajoutez ces variables dans `environment:` de **`app1-biblio`**, après `DB_PASS` :
 
@@ -408,7 +405,7 @@ Et celles-ci dans `environment:` de **`app2-helpdesk`**, après `FLASK_SECRET` :
       OIDC_CLIENT_SECRET: ${HELPDESK_CLIENT_SECRET}
 ```
 
-## 2.7 Migrer les bases de données
+## 2.6 Migrer les bases de données
 
 Les tables `users` de BiblioGI et HelpDesk ne stockeront plus aucun mot de passe. Elles deviennent de simples
 **profils**, rattachés à l'identité Keycloak par le claim `sub`. Créez `mysql/migration-etape2.sql` :
@@ -448,7 +445,7 @@ colonne `sub` et plus de `pwd`. Les comptes, l'emprunt d'Alice et son ticket son
 À partir de maintenant, BiblioGI et HelpDesk ne fonctionnent plus (leur code cherche encore les mots de passe)
 jusqu'à la fin de 2.9 : c'est normal.
 
-## 2.8 Migrer BiblioGI (PHP)
+## 2.7 Migrer BiblioGI (PHP)
 
 ### a) Créer le client OIDC : `app1-biblio/src/inc/oidc.php`
 
@@ -770,7 +767,7 @@ render_header('Utilisateurs');
 
 Il n'y a plus d'inscription locale : les comptes sont créés dans Keycloak.
 
-## 2.9 Migrer HelpDesk (Python / Flask)
+## 2.8 Migrer HelpDesk (Python / Flask)
 
 ### a) `app2-helpdesk/requirements.txt` : ajoutez la ligne
 
@@ -1027,7 +1024,7 @@ Créez `templates/token.html` :
 
 Supprimez `templates/register.html`.
 
-## 2.10 Reconstruire et tester
+## 2.9 Reconstruire et tester
 
 ```bash
 docker compose up -d --build
@@ -1058,7 +1055,7 @@ docker compose ps
 | **8. Déconnexion** de BiblioGI | Passage rapide par Keycloak, retour sur BiblioGI non connecté. Rechargez HelpDesk et notez votre état. Une reconnexion à BiblioGI **redemande** le mot de passe | Erreur Keycloak sur l'URI à la déconnexion → *Valid post logout redirect URIs* manquant |
 | **9. IntraGI** | Toujours l'ancien formulaire et l'ancien mot de passe (`alice` / `alice`) | — |
 
-## 2.11 Dépannage de l'étape 2
+## 2.10 Dépannage de l'étape 2
 
 | Symptôme | Cause probable | Solution |
 |----------|----------------|----------|
