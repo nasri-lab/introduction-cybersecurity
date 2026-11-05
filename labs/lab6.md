@@ -1240,11 +1240,6 @@ docker compose ps
 ✅ **Attendu** : **8 services** `Up`, dont `openldap` et `phpldapadmin`. Sur Mac Apple Silicon, `openldap` met
 une à deux minutes au premier démarrage (image émulée) : c'est normal.
 
-❌ `openldap` en `Restarting` → `docker compose logs openldap`. Une erreur de syntaxe dans `bootstrap.ldif`
-(espace en fin de ligne, ligne vide manquante entre deux entrées) est la cause habituelle. Corrigez, puis
-`docker compose rm -sf openldap`, `docker volume rm lab-iam_ldap_data lab-iam_ldap_config`, `docker compose up -d`
-(seul l'annuaire est réinitialisé).
-
 ## 3.4 Explorer l'annuaire
 
 **phpLDAPadmin** : http://localhost:8090 → *login* → Login DN `cn=admin,dc=gi4,dc=lab`, mot de passe `adminldap`.
@@ -1400,7 +1395,7 @@ anciens mots de passe. Realm `gi4-lab` → *Users* → cochez les 4 comptes → 
 
 ### c) Les mappers
 
-Ouvrez `ldap-gi4` → onglet *Mappers* :
+Dans le menu `User Federation` Ouvrez `ldap-gi4` → onglet *Mappers* :
 
 1. Ouvrez le mapper **first name** : remplacez l'attribut LDAP `cn` par `givenName` → *Save*.
    (Sans cela, le prénom d'Alice serait « Alice Martin ».)
