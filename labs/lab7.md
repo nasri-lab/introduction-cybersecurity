@@ -39,6 +39,69 @@ Le lab se trouve dans le dépôt du cours, https://github.com/nasri-lab/introduc
 
 > Les commandes du lab sont écrites pour **PowerShell**. Elles fonctionnent telles quelles sous Linux et macOS, sauf quand une variante bash est indiquée. Sous Git Bash, tapez d'abord `export MSYS_NO_PATHCONV=1`.
 
+### Que contient le dossier `lab7` ?
+
+Dans le dépôt, le dossier `labs` contient cet énoncé `lab7.md` et le dossier `lab7`. Voici à quoi sert chaque élément du dossier `lab7`, pour savoir exactement ce que vous avez téléchargé.
+
+```
+labs/
+├── lab7.md                     ← l'énoncé du lab (ce fichier)
+└── lab7/                       ← le lab, prêt à l'emploi
+    ├── docker-compose.yml      ← chef d'orchestre : conteneurs + réseau isolé
+    │
+    ├── serveur/                ← la cible : intranet + routeur
+    │   ├── Dockerfile          ← image du serveur (python:3.12-slim)
+    │   ├── web.py              ← intranet HTTP, en clair (port 80)
+    │   └── telnet.py           ← console Telnet du routeur (port 23)
+    │
+    ├── victime/                ← le robot « alice »
+    │   ├── Dockerfile          ← image de la victime (python:3.12-slim)
+    │   └── victime.py          ← se connecte toutes les 8 s
+    │
+    ├── attaquant/              ← votre poste d'attaque
+    │   └── Dockerfile          ← image Kali (attaquant ET sonde)
+    │
+    ├── suricata/               ← l'IDS / IPS
+    │   ├── Dockerfile          ← image Suricata (debian:trixie-slim)
+    │   └── rules/              ← vos règles (vide au départ)
+    │
+    ├── captures/               ← vos fichiers .pcap (vide au départ)
+    └── logs/                   ← alertes de Suricata (vide au départ)
+```
+
+Le fichier `docker-compose.yml` crée, à partir de ces dossiers, un réseau isolé (le switch virtuel `br-lab`) et six conteneurs :
+
+| Conteneur | Image | Quand il tourne | Rôle |
+|---|---|---|---|
+| `serveur` | python:3.12-slim | en permanence | Intranet et routeur à attaquer, puis à protéger |
+| `victime` | python:3.12-slim | en permanence | Robot qui joue alice et produit le trafic |
+| `attaquant` | Kali Linux | en permanence | Votre poste d'attaque (tcpdump, arpspoof, hping3) |
+| `sonde` | Kali Linux (même image que l'attaquant) | à la demande | Capture du trafic sur le switch |
+| `ids` | Suricata | à la demande (exercice 2) | Détecte et alerte |
+| `ips` | Suricata (même image que l'IDS) | à la demande (exercice 2) | Détecte et bloque |
+
+Les autres fichiers (règles Suricata, certificat, clés SSH, `console.py`, `wg0.conf`, `firewall.sh`…) sont créés par vous pendant l'exercice 2.
+
+> **La sonde : à quoi sert-elle ?**
+> La sonde est simplement une machine **branchée sur le switch pour voir ce qui passe par le switch**. Dans une entreprise, c'est le poste de l'administrateur relié au **port miroir** du switch : il reçoit une copie de tout le trafic, sans le modifier.
+>
+> Dans le lab, elle sert à deux choses :
+> 1. **Voir la menace de vos yeux** : depuis son propre poste, l'attaquant ne voit rien, car le switch ne lui envoie pas le trafic des autres. La sonde, elle, voit tout, et vous montre que le mot de passe d'alice circule en clair.
+> 2. **Comprendre le Man-in-the-Middle** : avec l'ARP spoofing, l'attaquant force le trafic à passer par son poste. Il voit alors **exactement la même chose que la sonde**, sans avoir besoin d'un port miroir. Le vrai problème n'est donc pas « qui écoute », mais le fait que le trafic circule **en clair**. C'est ce que corrige l'exercice 2.
+
+> **Un IDS et un IPS logiciels, sans boîtier.**
+> En entreprise, l'IDS et l'IPS sont souvent des boîtiers dédiés : l'IDS branché sur le port miroir, l'IPS posé en coupure sur le câble, avec deux cartes réseau. Ici, on utilise **Suricata**, un logiciel installé dans un conteneur, sans boîtier ni machine supplémentaire.
+>
+> C'est **le même logiciel** pour les deux rôles, mais trois choses changent :
+>
+> | | IDS (détecter) | IPS (bloquer) |
+> |---|---|---|
+> | **Position** | sur le côté : il écoute une **copie** du trafic sur le switch | sur le chemin : collé au serveur, **tout** le trafic TCP passe par lui avant d'arriver |
+> | **Règles** | commencent par `alert` : il signale | commencent par `drop` : il jette le paquet |
+> | **Lancement** | `suricata -i br-lab` : il lit le switch | `suricata -q 0` : il rend un verdict sur chaque paquet |
+>
+> L'image à retenir : l'IDS est une **caméra de surveillance**, l'IPS est un **videur à l'entrée**.
+
 ### 3. Construire toutes les images
 
 ```powershell
